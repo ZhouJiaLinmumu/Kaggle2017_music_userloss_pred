@@ -143,7 +143,7 @@ gamma=0.04
 Lambda=0.15
 n_records=df_train.shape[0]
 for step in range(steps):
-    print('the '+step+' is running')
+    print('the '+str(step)+' is running')
 
     #将训练样本打乱
     kk=np.random.permutation(n_records)
