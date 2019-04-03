@@ -169,29 +169,26 @@ for step in range(steps):
     #学习率递减
     gamma=gamma*0.93
 
-#--------------------------------------------测试模型-------------------------------------------------------------------
-df_test=pd.read_csv('test.csv')
-cat_drop=['source_system_tab','source_screen_name','source_tyoe']
-df_test.drop(cat_drop,axis=1)
-n_test_num=df_test.shape[0]
+#保存bu bi pu pi
+import json
+def save_json(filepath):
+    dict_={}
+    dict_['mu']=mu
+    dict_['K']=K
 
-#分数列表
-score_list=list()
-#id
-ids=df_test['id'].values()
+    dict_['bu']=bu
+    dict_['bi']=bi
 
-df=pd.DataFrame()
-df['id']=ids
-#取出每一行中的user_id song_id，输入进svd_pred()
-for i in range(n_test_num):
-    user_id=df_test.iloc[i]['msno']
-    item_id=df_test.ilov[i]['song_id']
+    dict_['pu']=pu
+    dict_['qi']=qi
+    jsonfile=json.dump(dict_)
+    with open(filepath,'w') as file:
+        file.write(jsonfile)
 
-    test_score=svc_pred(user_id,item_id)
-    score_list.append(test_score)
+filepath='svd_bias.json'
+save_json(filepath)
 
-df['score']=score_list
 
-df.to_csv('sumission_svd_cf_pred.csv',float_format='%.5f')
+
 
 

@@ -37,9 +37,12 @@ dtype={'city':'category',
 members=pd.read_csv('members.csv',dtype=dtype)
 
 songs_extra=pd.read_csv('song_extra_info.csv')
-#-------------------------特征工程部分---------------------------------------
+print('Data is preprocessing...')
 
+
+#-------------------------特征工程部分---------------------------------------
 #将songs合并到训练集、测试集
+
 train=train.merge(songs,how='left',on='song_id')
 test=test.merge(songs,how='left',on='song_id')
 
