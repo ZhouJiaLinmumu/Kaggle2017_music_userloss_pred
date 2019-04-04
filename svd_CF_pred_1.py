@@ -134,21 +134,23 @@ for step in range(steps):
     #学习率递减
     gamma=gamma*0.81
 
-#分数列表
-score_list=list()
-#id
-ids=df_test['id'].values()
+import json
+filepath='matrix_data.json'
+#save_json()
+def save_json(filepath):
+    dict_={}
+    dict_['K']=K
+    dict_['mu']=mu
+    dict_['bi']=bi
+    dict_['bu']=bu
 
-df=pd.DataFrame()
-df['id']=ids
-#取出每一行中的user_id song_id，输入进svd_pred()
-for i in range(n_test_num):
-    user_id=df_test.iloc[i]['msno']
-    item_id=df_test.ilov[i]['song_id']
+    dict_['pu']=pu
+    dict_['qi']=qi
 
-    test_score=svd_pred(user_id,item_id)
-    score_list.append(test_score)
+    json_text=json.dumps(dict_)
+    with open(filepath) as file:
+        file.write(json_text)
 
-df['score']=score_list
 
-df.to_csv('submission_svd_cf_pred.csv',float_format='%.5f')
+filepath='save_model.json'
+save_json(filepath)
