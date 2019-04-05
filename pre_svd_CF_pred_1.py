@@ -127,8 +127,27 @@ for uid in range(n_users):
 for pid in range(n_items):
     qi[pid]=np.reshape(random((K,1))/10*(np.sqrt(K)),K)
 
+
+#-------------------------------------训练速度较慢，采取分步计算，此步可省略----------------------------------------
 #计算所有用户的平均打分
 mu=df_train['fractional_rating_count'].mean()
+
+#加载模型
+# 用户和item的索引
+users_index = pickle.load(open("/data/weixin-38664232/my-dataset/users_index.pkl", 'rb'))
+items_index = pickle.load(open("/data/weixin-38664232/my-dataset/items_index.pkl", 'rb'))
+
+n_users = len(users_index)
+n_items = len(items_index)
+
+# 用户-物品关系矩阵R
+user_item_scores = sio.mmread("/data/weixin-38664232/my-dataset/user_item_scores")
+
+# 倒排表
+##每个用户播放的歌曲
+user_items = pickle.load(open("/data/weixin-38664232/my-dataset/user_items.pkl", 'rb'))
+##事件参加的用户
+item_users = pickle.load(open("/data/weixin-38664232/my-dataset/item_users.pkl", 'rb'))
 
 
 #-------------------------------------模型预测--------------------------------------------------------------------------
@@ -181,14 +200,11 @@ def save_json(filepath):
 
     dict_['pu']=pu
     dict_['qi']=qi
-    jsonfile=json.dump(dict_)
+    jsonfile=json.dumps(dict_)
     with open(filepath,'w') as file:
         file.write(jsonfile)
 
-filepath='svd_bias.json'
+filepath='save_model.json'
 save_json(filepath)
-
-
-
 
 
