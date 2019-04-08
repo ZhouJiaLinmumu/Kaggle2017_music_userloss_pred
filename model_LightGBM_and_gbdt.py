@@ -170,12 +170,14 @@ df_train=pd.concat([df_train,gender_train],axis=1)
 df_test=pd.concat([df_test,gender_test],axis=1)
 
 #特征处理后，去掉无用的特征
-df_train.drop(['composer','gender'],inplace=True)
-df_test.drop(['composer','gender'],inplace=True)
+df_train.drop(['composer','gender'],axis=1,inplace=True)
+df_test.drop(['composer','gender'],axis=1,inplace=True)
 
 #有效的时间
-df_train['validaty_days']=(df_train['expiration_date']-df_train['registration_init_time']).dt.days
-df_test['validaty_days']=(df_test['expiration_date']-df_test['registration_init_time']).dt.days
+df_train['validaty_days']=pd.to_timedelta(df_train['expiration_date']-df_train['registration_init_time'],unit='d').dt.days
+df_test['validaty_days']=pd.to_timedelta(df_test['expiration_date']-df_test['registration_init_time'],unit='d').dt.days
+#df_train['validaty_days']=(df_train['expiration_date']-df_train['registration_init_time']).dt.days
+#df_test['validaty_days']=(df_test['expiration_date']-df_test['registration_init_time']).dt.days
 #处理后，去掉时间特征
 df_train.drop(['expiration_date','registration_init_time'],axis=1,inplace=True)
 df_test.drop(['expiration_date','registration_init_time'],axis=1,inplace=True)
@@ -199,12 +201,12 @@ df_test=df_test.merge(df_songs_extra,on='song_id',how='left')
 #歌曲发行音像制品
 def isrc_to_year(isrc):
     if type(isrc)==str:
-        if int(isrc[5:7]>17):
+        if int(isrc[5:7])>17:
             return 1900+int(isrc[5:7])
         else:
             return 2000+int(isrc[5:7])
     else:
-        return np.nan
+        return 1950  #取1900、2000的中间值
 
 df_train['song_year']=df_train['isrc'].apply(isrc_to_year)
 df_test['song_year']=df_test['isrc'].apply(isrc_to_year)
@@ -238,56 +240,55 @@ df_test['registered_via']=df_test['registered_via'].astype('category')
 df_train['age_range']=pd.cut(df_train['bd'],bins=[-45,0,10,18,35,50,80,200])
 df_test['age_range']=pd.cut(df_test['bd'],bins=[-45,0,10,18,35,50,80,200])
 
-for value in df_train:
-    value.loc[(value['bd']>0) & (value['bd']<=10),'age_category']=0
-    value.loc[(value['bd']>80) & (value['bd']<=200),'age_vategory']=1
-    value.loc[(value['bd']>50) & (value['bd']<=80),'age_category']=2
-    value.loc[(value['bd']>10) & (value['bd']<=18),'age_category']=3
-    value.loc[(value['bd']>35) & (value['bd']<=50),'age_category']=4
-    value.loc[(value['bd']>-45) & (value['bd']<=0),'age_category']=5
-    value.loc[(value['bd']>18) & (value['bd']<=35),'age_category']=6
-
-for value in df_test:
+combine=[df_train,df_test]
+for value in combine:
     value.loc[(value['bd'] > 0) & (value['bd'] <= 10), 'age_category'] = 0
-    value.loc[(value['bd'] > 80) & (value['bd'] <= 200), 'age_vategory'] = 1
+    value.loc[(value['bd'] > 80) & (value['bd'] <= 200), 'age_category'] = 1
     value.loc[(value['bd'] > 50) & (value['bd'] <= 80), 'age_category'] = 2
     value.loc[(value['bd'] > 10) & (value['bd'] <= 18), 'age_category'] = 3
     value.loc[(value['bd'] > 35) & (value['bd'] <= 50), 'age_category'] = 4
     value.loc[(value['bd'] > -45) & (value['bd'] <= 0), 'age_category'] = 5
     value.loc[(value['bd'] > 18) & (value['bd'] <= 35), 'age_category'] = 6
 
+
 #年龄、年龄范围处理完后，删除不用特征
-df_train.drop(['bd','age_range'],axis=1)
-df_test.drop(['bd','age_range'],axis=1)
+df_train.drop(['bd','age_range'],axis=1,inplace=True)
+df_test.drop(['bd','age_range'],axis=1,inplace=True)
+
+df_train.to_csv('df_train.csv')
+df_test.to_csv('df_test.csv')
 
 
 #--------------------------模型训练-----------------------------
-
-y=df_train['target'].values()
-X=df_train.drop(['msno','song_id','target'],axis=1) #只剩下特征
-
 import lightgbm as lgb
-d_train=lgb.Dataset(X,y)
-watchlist=[d_train]
+from sklearn.model_selection import train_test_split
+X_train,X_val,y_train,y_val=train_test_split(df_train,test_size=0.2)
 
-params={'learning_rate':0.5,
-        'application':'binary',
-        'max_depth':10,
-        'num_leaves':2**6,
-        'verbosity':0,
-        'metric':'auc',
-        'n_jobs':-1
-        }
+#print('train head()\n',train.head())
+#print('val head()\n',val.head())
 
-model=lgb.train(params=params,train_set=d_train,num_boost_round=60,
-                valid_sets=watchlist,verbose_eval=5)
+X_train=X_train.drop(['msno','song_id','target'],axis=1)
+y_train=y_train['target'].values
+
+X_val.drop(['msno','song_id'],axis=1,inplace=True)
 
 
-
-#-----------------------------预测-------------------------------
 song_ids=df_test['id'].values
-X_test=df_test.drop(['msno','song_id','id'],axis=1).values()
-y_preds=model.predict(X_test)
+X_test=df_test.drop(['msno','song_id','id'],axis=1).values
+
+
+model=lgb.LGBMClassifier(boosting_type='gbdt',
+                         num_leaves=2**6,
+                         max_depth=10,
+                         objective='binary',
+                         metric='auc',
+                         learning_rate=0.3,
+                         n_jobs=-1)
+model.fit(X=X_train,y=y_train,eval_set=[X_val,y_val])
+
+y_preds=model.predict(X_test,num_iteration=model.best_iteration_)
+
+print('auc is:',model.best_score_)
 
 result_df=pd.DataFrame()
 result_df['id']=song_ids
@@ -296,5 +297,17 @@ result_df['target']=y_preds
 #保存结果
 result_df.to_csv('submission.csv.gz',compression='gzip',index=False,
                  float_format='%.5f')
+
+
+
+
+
+
+
+
+
+
+
+
 
 

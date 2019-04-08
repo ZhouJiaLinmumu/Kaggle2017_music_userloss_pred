@@ -157,7 +157,7 @@ def svc_pred(uid,iid):
     return score
 
 #50遍训练，得到模型
-steps=50
+steps=15
 gamma=0.04
 Lambda=0.15
 n_records=df_train.shape[0]
