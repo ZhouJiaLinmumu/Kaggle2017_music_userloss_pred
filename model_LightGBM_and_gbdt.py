@@ -19,7 +19,7 @@ df_test=df_test.merge(df_songs,on='song_id',how='left')
 #合并用户信息
 df_train=df_train.merge(df_members,on='msno',how='left')
 df_test=df_test.merge(df_members,on='msno',how='left')
-
+#---------------------------------特征工程部分---------------------------
 #---------------------------------空值填充-------------------------------
 df_train['gender'].fillna(value='Unknown',inplace=True)
 df_test['gender'].fillna(value='Unknown',inplace=True)
@@ -47,8 +47,7 @@ df_test['song_length'].fillna(value=df_test['song_length'].mean(),inplace=True)
 df_train['language'].fillna(value=df_train['language'].mode()[0],inplace=True)
 df_test['language'].fillna(value=df_test['language'].mode()[0],inplace=True)
 
-
-#----------------------------------------填充值处理-------------------------
+#----------------------------------------空值填充后的处理-------------------------
 #genre_ids
 df_train['genre_ids']=df_train['genre_ids'].str.split('|')
 df_test['genre_ids']=df_test['genre_ids'].str.split('|')
@@ -260,43 +259,6 @@ df_test.to_csv('df_test.csv')
 
 
 #--------------------------模型训练-----------------------------
-import lightgbm as lgb
-from sklearn.model_selection import train_test_split
-X_train,X_val,y_train,y_val=train_test_split(df_train,test_size=0.2)
-
-#print('train head()\n',train.head())
-#print('val head()\n',val.head())
-
-X_train=X_train.drop(['msno','song_id','target'],axis=1)
-y_train=y_train['target'].values
-
-X_val.drop(['msno','song_id'],axis=1,inplace=True)
-
-
-song_ids=df_test['id'].values
-X_test=df_test.drop(['msno','song_id','id'],axis=1).values
-
-
-model=lgb.LGBMClassifier(boosting_type='gbdt',
-                         num_leaves=2**6,
-                         max_depth=10,
-                         objective='binary',
-                         metric='auc',
-                         learning_rate=0.3,
-                         n_jobs=-1)
-model.fit(X=X_train,y=y_train,eval_set=[X_val,y_val])
-
-y_preds=model.predict(X_test,num_iteration=model.best_iteration_)
-
-print('auc is:',model.best_score_)
-
-result_df=pd.DataFrame()
-result_df['id']=song_ids
-result_df['target']=y_preds
-
-#保存结果
-result_df.to_csv('submission.csv.gz',compression='gzip',index=False,
-                 float_format='%.5f')
 
 
 
