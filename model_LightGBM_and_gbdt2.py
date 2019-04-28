@@ -62,7 +62,7 @@ params={
         'max_bin':256,
         'n_jobs':-1
 }
-#model_2=lgb.train(params=params,train_set=lgb_train,valid_sets=lgb_val,early_stopping_rounds=5)
+model_2=lgb.train(params=params,train_set=lgb_train,valid_sets=lgb_val,early_stopping_rounds=5)
 
 '''
 #best param {'max_depth': 17, 'num_leaves': 58}
@@ -74,8 +74,8 @@ params={
 #      subsample=0.8, subsample_for_bin=200000, subsample_freq=0)'''
 
 y_preds_1=model_1.predict(X_test,num_iteration=model_1.best_iteration)
-#y_preds_2=model_2.predict(X_test,num_iteration=model_2.best_iteration)
-#y_preds_avg=np.mean([y_preds_1,y_preds_2],axis=0)
+y_preds_2=model_2.predict(X_test,num_iteration=model_2.best_iteration)
+y_preds_avg=np.mean([y_preds_1,y_preds_2],axis=0)
 
 
 #print(y_preds)

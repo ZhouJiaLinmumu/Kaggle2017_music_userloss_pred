@@ -6,16 +6,27 @@ pd.set_option('display.width',1000)
 pd.set_option('display.max_colwidth',1000)
 
 df_train=pd.read_csv('train.csv',dtype={'msno' : 'category',
-                                                'source_system_tab' : 'category',
+                                                'source_system_tab' :'category',
                                                   'source_screen_name' : 'category',
                                                   'source_type' : 'category',
                                                   'target' : np.uint8,
                                                   'song_id' : 'category'})
+'''#尝试对source_system_tab source_screen_name source_type这三种特征做one-hot编码
+from sklearn.preprocessing import OneHotEncoder
+enc=OneHotEncoder()
+df_train['source_system_tab'].fillna(value='none',inplace=True)
+enc.fit([df_train['source_system_tab']])
+train_source_system_tab=enc.transform([df_train['source_system_tab']])
+df_train=pd.concat(df_train,train_source_system_tab)
+df_train.drop(['source_system_tab'],axis=1)
+print('source_system_tab\n',df_train.head())'''
+
 df_test=pd.read_csv('test.csv', dtype={'msno' : 'category',
                                                 'source_system_tab' : 'category',
                                                 'source_screen_name' : 'category',
                                                 'source_type' : 'category',
                                                 'song_id' : 'category'})
+
 
 songs_extra=pd.read_csv('song_extra_info.csv')
 members=pd.read_csv('members.csv',dtype={'city' : 'category',
@@ -33,7 +44,6 @@ df_songs=pd.read_csv('songs.csv',dtype={'genre_ids': 'category',
 song_cols = ['song_id', 'artist_name', 'genre_ids', 'song_length', 'language']
 train = df_train.merge(df_songs[song_cols], on='song_id', how='left')
 test = df_test.merge(df_songs[song_cols], on='song_id', how='left')
-
 
 members['registration_year'] = members['registration_init_time'].apply(lambda x: int(str(x)[0:4]))
 members['registration_month'] = members['registration_init_time'].apply(lambda x: int(str(x)[4:6]))
@@ -94,6 +104,7 @@ for value in combine:
 train.drop(['bd','age_range'],axis=1,inplace=True)
 test.drop(['bd','age_range'],axis=1,inplace=True)
 
+
 '''
 #有效的时间
 train['validaty_days']=pd.to_timedelta(train['expiration_date']-train['registration_init_time'],unit='d').dt.days
@@ -137,12 +148,10 @@ params={
         'boosting':'gbdt',
         'objective':'binary',
         'metric':'auc',
-        'learning_rate':0.2,
+        'learning_rate':0.08,
         'num_leaves':256,
         'max_depth':10,
-        'num_rounds':200,
-        'begging_freq':1,
-        'begging_seed':1,
+        'num_rounds':1000,
         'max_bin':256,
         'n_jobs':-1
 }
@@ -172,5 +181,6 @@ subm['id'] = ids
 subm['target'] = p_test
 subm.to_csv('submission.csv.gz', compression = 'gzip', index=False, float_format = '%.5f')
 print('Done!')
+
 
 
